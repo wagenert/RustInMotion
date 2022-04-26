@@ -5,12 +5,11 @@ mod prelude {
     pub use chrono::{prelude::*, Duration};
     pub use std::{collections::HashMap, f64::INFINITY, process::exit};
     pub use yahoo_finance_api as yahoo;
+    pub use log::{warn, error};
 }
 
-use chrono::ParseError;
 use prelude::*;
 use clap::{Command, arg, command};
-use log::{warn, error};
 
 fn is_valid_date(d: &str) -> Result<(), String> {
     match NaiveDate::parse_from_str(&d, "%Y-%m-%d") {

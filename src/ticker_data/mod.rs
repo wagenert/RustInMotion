@@ -58,7 +58,7 @@ pub fn get_max_prices<'a>(
         let quotes = match get_prices(provider, ticker, from_date, &granularity) {
             Ok(value) => value,
             Err(_) => {
-                eprintln!("Failed to retrieve quotes for ticker {}", ticker);
+                warn!("Failed to retrieve quotes for ticker {}", ticker);
                 continue;
             }
         };
@@ -79,7 +79,7 @@ pub fn get_min_prices<'a>(
         let quotes = match get_prices(provider, ticker, from_date, &granularity) {
             Ok(value) => value,
             Err(_) => {
-                eprintln!("Failed to retrieve quotes for ticker {}", ticker);
+                warn!("Failed to retrieve quotes for ticker {}", ticker);
                 continue;
             }
         };
@@ -101,7 +101,7 @@ pub fn get_sma_windows<'a>(
         let quotes = match get_prices(provider, ticker, from_date, &granularity) {
             Ok(value) => value,
             Err(_) => {
-                eprintln!("Failed to retrieve quotes for ticker {}", ticker);
+                warn!("Failed to retrieve quotes for ticker {}", ticker);
                 continue;
             }
         };
@@ -121,14 +121,14 @@ pub fn get_price_differences<'a>(
         let quotes = match get_prices(provider, ticker, from_date, &granularity) {
             Ok(value) => value,
             Err(_) => {
-                eprintln!("Failed to retrieve quotes for ticker {}", ticker);
+                warn!("Failed to retrieve quotes for ticker {}", ticker);
                 continue;
             }
         };
         if let Some(difference) = price_difference(quotes.as_slice()) {
             result.insert(ticker, difference);
         } else {
-            eprintln!("Could not calculate difference for {}. Skipping!", ticker);
+            warn!("Could not calculate difference for {}. Skipping!", ticker);
         }
     }
     result
@@ -150,7 +150,7 @@ pub fn get_ticker_summary<'a>(
         ) {
             Ok(response) => response,
             Err(error) => {
-                eprintln!(
+                warn!(
                     "Cannot retrieve response for ticker {}! {:?}",
                     ticker, error
                 );
