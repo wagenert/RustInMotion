@@ -7,9 +7,10 @@ mod prelude {
     pub use yahoo_finance_api as yahoo;
 }
 
-use clap::{Command, arg};
+use chrono::ParseError;
 use prelude::*;
-pub use clap::{command};
+use clap::{Command, arg, command};
+use log::{warn, error};
 
 fn is_valid_date(d: &str) -> Result<(), String> {
     match NaiveDate::parse_from_str(&d, "%Y-%m-%d") {
@@ -27,13 +28,17 @@ fn is_valid_date(d: &str) -> Result<(), String> {
     }
 }
 
-fn extract_date(date_str: &str) -> DateTime<Utc> {
-    let date = NaiveDate::parse_from_str(date_str, "%Y-%m-%d").unwrap();
-    let from_date = Utc
-        .from_local_datetime(&date.and_hms(00, 00, 00))
-        .earliest()
-        .unwrap();
-    from_date
+fn extract_date(date_str: &str) -> Result<DateTime<Utc>, String> {
+    match NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+        Ok(date) => {
+            match Utc.from_local_datetime(&date.and_hms(00, 00, 00)) {
+                chrono::LocalResult::None => Err("Can not convert date to UTC datetime.".to_string()),
+                chrono::LocalResult::Single(from_date) => Ok(from_date),
+                chrono::LocalResult::Ambiguous(from_date, _) => Ok(from_date), //effectively earliest date
+            }
+        },
+        Err(parse_error) => Err(format!("{:?}", parse_error)),
+    }
 }
 
 fn parse_window_param<'a>(sma_matches: &clap::ArgMatches) -> Result<usize, String> {
@@ -48,6 +53,8 @@ fn parse_window_param<'a>(sma_matches: &clap::ArgMatches) -> Result<usize, Strin
     }
 
 fn main() {
+    env_logger::init();
+
     let matches = command!()
         .propagate_version(true)
         .subcommand_required(true)
@@ -92,9 +99,17 @@ fn main() {
         )
         .get_matches();
         
+    // Tickers is a required parameter. Therefore it is safe to use unwrap
     let mut tickers = matches.values_of("ticker").unwrap();
+
     let from_date = match matches.value_of("from") {
-        Some(date) => extract_date(date),
+        Some(date) => match extract_date(date) {
+            Ok(from_date) => from_date,
+            Err(reason) => {
+                error!("Can not parse date for reason {:?}", reason);
+                exit(-3);
+            }
+        },
         None => Utc::now() - Duration::days(30),
     };
 
@@ -118,7 +133,7 @@ fn main() {
             let window: usize = match parse_window_param(sma_matches) {
                 Ok(value) => value,
                 Err(error) => {
-                    eprintln!("{}", error);
+                    error!("Can not parse sliding window parameter to number of days. Reason: {}", error);
                     exit(-2);
                 }
             };
