@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-yahoo_finance_api = {versiocan = "1.2.2", features = ["blocking"]}
+yahoo_finance_api = {version = "1.2.2", features = ["blocking"]}
 clap = {version = "3.1", features = ["cargo"]}
 chrono = "0.4"
 log = "0.4"
