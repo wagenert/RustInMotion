@@ -41,7 +41,7 @@ fn extract_date(date_str: &str) -> Result<DateTime<Utc>, String> {
 }
 
 fn parse_window_param<'a>(sma_matches: &clap::ArgMatches) -> Result<usize, String> {
-        let result = match sma_matches.value_of("DAYS").unwrap().parse::<usize>() {
+        let result = match sma_matches.value_of("window").unwrap().parse::<usize>() {
             Ok(value) => Ok(value),
             Err(error) => Err(format!(
                 "Can not parse parameter value of window to a number. {:?}",
