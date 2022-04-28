@@ -88,6 +88,7 @@ fn main() {
             .help(
                 "start date from which you want to collect the data. Defaults to last 30 days."
             )
+            .required(false)
             .validator(|d| is_valid_date(d))
         )
         .arg(
