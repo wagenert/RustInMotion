@@ -137,12 +137,16 @@ fn main() {
                     exit(-2);
                 }
             };
-            let smas: HashMap<&str, Vec<f64>> =
-                get_sma_windows(&mut tickers, &provider, &from_date, window);
             println!("Sliding windows of {} days", window);
-            smas.iter().for_each(|(key, values)| {
-                println!("{}: {:#?}", *key, values);
-            });
+            match get_sma_windows(&mut tickers, &provider, &from_date, window) {
+                Ok(smas) => smas.iter().for_each(|(key, values)| {
+                                                    println!("{}: {:#?}", *key, values);
+                                                  }),
+                Err(s) => {
+                    error!("Sliding window failed because of {}", s);
+                    exit(-3);
+                },
+            };
         }
         Some(("diff", _)) => {
             let price_differences: HashMap<&str, (f64, f64)> =

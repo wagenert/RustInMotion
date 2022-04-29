@@ -94,7 +94,7 @@ pub fn get_sma_windows<'a>(
     provider: &'a yahoo::YahooConnector,
     from_date: &DateTime<Utc>,
     window: usize,
-) -> HashMap<&'a str, Vec<f64>> {
+) -> Result<HashMap<&'a str, Vec<f64>>, String> {
     let granularity = Granularity::Day;
     let mut result = HashMap::new();
     for ticker in tickers {
@@ -105,9 +105,13 @@ pub fn get_sma_windows<'a>(
                 continue;
             }
         };
-        result.insert(ticker, n_window_sma(window, quotes.as_slice()).unwrap());
+        if let Some(sla) = n_window_sma(window, quotes.as_slice()) {
+            result.insert(ticker, sla);
+        } else {
+            return Err("Slinding window did return None as a result.".to_string());
+        }
     }
-    result
+    Ok(result)
 }
 
 pub fn get_price_differences<'a>(
