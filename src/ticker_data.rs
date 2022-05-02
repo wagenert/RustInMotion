@@ -6,7 +6,7 @@ use crate::prelude::*;
 use data_processing::*;
 use granularity::*;
 use ticker_summary::*;
-use yahoo::{Quote, YResponse, YahooConnector, YahooError};
+use yahoo::{Quote, YahooConnector, YahooError};
 
 fn get_quotes(
     provider: &YahooConnector,
@@ -22,13 +22,6 @@ fn get_quotes(
     ) {
         Ok(response) => response.quotes(),
         Err(error) => Err(error),
-    }
-}
-
-fn get_prices_from_response(response: YResponse) -> Result<Vec<f64>, YahooError> {
-    match response.quotes() {
-        Ok(quotes) => Ok(quotes.iter().map(|quote| quote.adjclose).collect()),
-        Err(yerr) => Err(yerr),
     }
 }
 
@@ -74,15 +67,6 @@ pub fn get_max_prices<'a>(
                 continue;
             }
         };
-        /* let quotes = match get_prices(provider, ticker, from_date, &granularity) {
-            Ok(value) => value,
-            Err(_) => {
-                warn!("Failed to retrieve quotes for ticker {}", ticker);
-                continue;
-            }
-        };
-        let max_price = max(quotes.as_slice()).unwrap();
-        result.insert(ticker, max_price); */
     }
     result
 }
@@ -117,15 +101,6 @@ pub fn get_min_prices<'a>(
                 continue;
             }
         };
-        /* let quotes = match get_prices(provider, ticker, from_date, &granularity) {
-            Ok(value) => value,
-            Err(_) => {
-                warn!("Failed to retrieve quotes for ticker {}", ticker);
-                continue;
-            }
-        };
-        let min_price = min(quotes.as_slice()).unwrap();
-        result.insert(ticker, min_price); */
     }
     result
 }
@@ -149,7 +124,7 @@ pub fn get_sma_windows<'a>(
         if let Some(sla) = n_window_sma(window, quotes.as_slice()) {
             result.insert(ticker, sla);
         } else {
-            return Err("Slinding window did return None as a result.".to_string());
+            return Err("Sliding window did return None as a result.".to_string());
         }
     }
     Ok(result)
@@ -185,19 +160,7 @@ pub fn get_price_differences<'a>(
                 continue;
             }
         };
-/*         let quotes = match get_prices(provider, ticker, from_date, &granularity) {
-            Ok(value) => value,
-            Err(_) => {
-                warn!("Failed to retrieve quotes for ticker {}", ticker);
-                continue;
-            }
-        };
-        if let Some(difference) = price_difference(quotes.as_slice()) {
-            result.insert(ticker, difference);
-        } else {
-            warn!("Could not calculate difference for {}. Skipping!", ticker);
-        }
- */    }
+    }
     result
 }
 

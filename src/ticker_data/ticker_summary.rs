@@ -58,6 +58,7 @@ impl TickerSummary {
             self.count += quotes.len();
             self.last_date = last_quote.timestamp;
             self.from_date = first_quote.timestamp;
+            self.price = last_quote.adjclose;
         }
     }
 
