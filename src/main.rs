@@ -125,14 +125,14 @@ fn main() {
     let provider = yahoo::YahooConnector::new();
     match matches.subcommand() {
         Some(("max", _)) => {
-            let max_prices = get_max_prices(&mut tickers, &provider, &from_date);
+            let max_prices = get_ticker_summary(&mut tickers, &provider, &from_date);
             println!("Max prices:");
             max_prices.iter().for_each(|(key, value)| {
                 println!("{}: {}", *key, value.max);
             });
         }
         Some(("min", _)) => {
-            let min_prices = get_min_prices(&mut tickers, &provider, &from_date);
+            let min_prices = get_ticker_summary(&mut tickers, &provider, &from_date);
             println!("Min prices:");
             min_prices.iter().for_each(|(key, value)| {
                 println!("{}: {}", *key, value.min);
@@ -161,7 +161,7 @@ fn main() {
             };
         }
         Some(("diff", _)) => {
-            let price_differences = get_price_differences(&mut tickers, &provider, &from_date);
+            let price_differences = get_ticker_summary(&mut tickers, &provider, &from_date);
             println!("Ticker\tPercent\tDifference");
             price_differences.iter().for_each(|(key, summary)| {
                 println!("{}:\t{:.2}%\t{:.2}", *key, summary.diff_percent().unwrap(), summary.diff().unwrap());
