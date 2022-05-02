@@ -1,6 +1,6 @@
 mod data_processing;
 mod granularity;
-mod ticker_data;
+mod ticker_summary;
 
 use std::time::UNIX_EPOCH;
 
@@ -8,7 +8,7 @@ use crate::prelude::*;
 use data_processing::*;
 use granularity::*;
 use std::time::Duration;
-use ticker_data::*;
+use ticker_summary::*;
 use yahoo::{Quote, YResponse, YahooConnector, YahooError};
 
 fn get_quotes(
@@ -142,7 +142,7 @@ pub fn get_ticker_summary<'a>(
     tickers: &'a mut clap::Values,
     provider: &YahooConnector,
     from_date: &DateTime<Utc>,
-) -> HashMap<&'a str, TickerData> {
+) -> HashMap<&'a str, TickerSummary> {
     let mut result = HashMap::new();
     let granularity = Granularity::Day;
     for ticker in tickers {
@@ -164,7 +164,7 @@ pub fn get_ticker_summary<'a>(
 
         let last_quote = response.last_quote().unwrap();
         let prices = get_prices_from_response(response).unwrap();
-        let mut ticker_data = TickerData::new(ticker, *from_date);
+        let mut ticker_data = TickerSummary::new(ticker, *from_date);
         ticker_data.price = last_quote.adjclose;
         ticker_data.last_date = DateTime::from(UNIX_EPOCH + Duration::from_secs(last_quote.timestamp));
         ticker_data.max = max(&prices).unwrap();
