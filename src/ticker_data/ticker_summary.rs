@@ -8,7 +8,6 @@ static SEPARATOR: &str = ",";
 pub struct TickerSummary {
     pub last_date: u64,
     pub from_date: u64,
-    pub price: f64,
     pub symbol: String,
     pub max: f64,
     pub min: f64,
@@ -23,7 +22,6 @@ impl TickerSummary {
         Self {
             last_date: 0,
             from_date: 0,
-            price: 0.0,
             symbol: symbol.to_owned(),
             max: 0.0,
             min: 0.0,
@@ -58,7 +56,8 @@ impl TickerSummary {
             self.count += quotes.len();
             self.last_date = last_quote.timestamp;
             self.from_date = first_quote.timestamp;
-            self.price = last_quote.adjclose;
+            self.start_price = first_quote.adjclose;
+            self.last_price = last_quote.adjclose;
         }
     }
 
@@ -110,7 +109,7 @@ impl Display for TickerSummary {
             comma_separated.push_str(SEPARATOR);
             comma_separated.push_str(&self.symbol);
             comma_separated.push_str(SEPARATOR);
-            comma_separated.push_str(&format!("${:.2}", &self.price));
+            comma_separated.push_str(&format!("${:.2}", &self.last_price));
             comma_separated.push_str(SEPARATOR);
             comma_separated.push_str(&format!("{:.2}%", &self.diff_percent().unwrap()));
             comma_separated.push_str(SEPARATOR);
