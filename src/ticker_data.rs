@@ -2,12 +2,9 @@ mod data_processing;
 mod granularity;
 mod ticker_summary;
 
-use std::time::UNIX_EPOCH;
-
 use crate::prelude::*;
 use data_processing::*;
 use granularity::*;
-use std::time::Duration;
 use ticker_summary::*;
 use yahoo::{Quote, YResponse, YahooConnector, YahooError};
 
@@ -146,13 +143,20 @@ pub fn get_ticker_summary<'a>(
     let mut result = HashMap::new();
     let granularity = Granularity::Day;
     for ticker in tickers {
-        let response = match provider.get_quote_history_interval(
+        match provider.get_quote_history_interval(
             ticker,
             from_date.clone(),
             Utc::now(),
             granularity.to_string(),
         ) {
-            Ok(response) => response,
+            Ok(response) => match response.quotes() {
+                Ok(quotes) => {
+                    let mut ticker_data = TickerSummary::new(ticker);
+                    ticker_data.update_ticker_summary(quotes);
+                    result.insert(ticker, ticker_data);
+                },
+                Err(_) => todo!(),
+            },
             Err(error) => {
                 warn!(
                     "Cannot retrieve response for ticker {}! {:?}",
@@ -162,18 +166,20 @@ pub fn get_ticker_summary<'a>(
             }
         };
 
-        let last_quote = response.last_quote().unwrap();
+/*        let last_quote = response.last_quote().unwrap();
         let prices = get_prices_from_response(response).unwrap();
         let mut ticker_data = TickerSummary::new(ticker, *from_date);
-        ticker_data.price = last_quote.adjclose;
+        ticker_data.update_ticker_summary(response.quotes());
+         ticker_data.price = last_quote.adjclose;
         ticker_data.last_date = DateTime::from(UNIX_EPOCH + Duration::from_secs(last_quote.timestamp));
         ticker_data.max = max(&prices).unwrap();
         ticker_data.min = min(&prices).unwrap();
         ticker_data.avg = avg(&&prices).unwrap();
         let (perc, diff) = price_difference(&prices).unwrap();
         ticker_data.perc = perc - 100.0;
-        ticker_data.diff = diff;
+        ticker_data.diff = diff;        
         result.insert(ticker, ticker_data);
+*/
     }
     result
 }
