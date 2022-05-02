@@ -5,7 +5,8 @@ use chrono::{DateTime, Utc};
 static SEPARATOR: &str = ",";
 #[derive(Debug)]
 pub struct TickerData {
-    pub date: DateTime<Utc>,
+    pub last_date: DateTime<Utc>,
+    pub from_date: DateTime<Utc>,
     pub price: f64,
     pub symbol: String,
     pub max: f64,
@@ -16,9 +17,10 @@ pub struct TickerData {
 }
 
 impl TickerData {
-    pub fn new(symbol: &str) -> Self {
+    pub fn new(symbol: &str, from_date: DateTime<Utc>) -> Self {
         Self {
-            date: Utc::now(),
+            last_date: Utc::now(),
+            from_date: from_date,
             price: 0.0,
             symbol: symbol.to_owned(),
             max: 0.0,
@@ -33,7 +35,7 @@ impl TickerData {
 impl Display for TickerData {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         let mut comma_separated = String::new();
-        comma_separated.push_str(&format!("{}", &self.date.to_rfc3339()));
+        comma_separated.push_str(&format!("{}", &self.last_date.to_rfc3339()));
         comma_separated.push_str(SEPARATOR);
         comma_separated.push_str(&self.symbol);
         comma_separated.push_str(SEPARATOR);
