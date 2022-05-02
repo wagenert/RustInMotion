@@ -164,9 +164,9 @@ pub fn get_ticker_summary<'a>(
 
         let last_quote = response.last_quote().unwrap();
         let prices = get_prices_from_response(response).unwrap();
-        let mut ticker_data = TickerData::new(ticker);
+        let mut ticker_data = TickerData::new(ticker, *from_date);
         ticker_data.price = last_quote.adjclose;
-        ticker_data.date = DateTime::from(UNIX_EPOCH + Duration::from_secs(last_quote.timestamp));
+        ticker_data.last_date = DateTime::from(UNIX_EPOCH + Duration::from_secs(last_quote.timestamp));
         ticker_data.max = max(&prices).unwrap();
         ticker_data.min = min(&prices).unwrap();
         ticker_data.avg = avg(&&prices).unwrap();
