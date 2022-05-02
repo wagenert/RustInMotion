@@ -128,14 +128,14 @@ fn main() {
             let max_prices = get_max_prices(&mut tickers, &provider, &from_date);
             println!("Max prices:");
             max_prices.iter().for_each(|(key, value)| {
-                println!("{}: {}", *key, value);
+                println!("{}: {}", *key, value.max);
             });
         }
         Some(("min", _)) => {
             let min_prices = get_min_prices(&mut tickers, &provider, &from_date);
             println!("Min prices:");
             min_prices.iter().for_each(|(key, value)| {
-                println!("{}: {}", *key, value);
+                println!("{}: {}", *key, value.min);
             });
         }
         Some(("sma", sma_matches)) => {
@@ -161,11 +161,10 @@ fn main() {
             };
         }
         Some(("diff", _)) => {
-            let price_differences: HashMap<&str, (f64, f64)> =
-                get_price_differences(&mut tickers, &provider, &from_date);
+            let price_differences = get_price_differences(&mut tickers, &provider, &from_date);
             println!("Ticker\tPercent\tDifference");
-            price_differences.iter().for_each(|(key, (perc, diff))| {
-                println!("{}:\t{:.2}%\t{:.2}", *key, perc, diff);
+            price_differences.iter().for_each(|(key, summary)| {
+                println!("{}:\t{:.2}%\t{:.2}", *key, summary.diff_percent().unwrap(), summary.diff().unwrap());
             });
         }
         Some(("sum", _)) => {

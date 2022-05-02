@@ -48,11 +48,33 @@ pub fn get_max_prices<'a>(
     tickers: &'a mut clap::Values,
     provider: &'a yahoo::YahooConnector,
     from_date: &'a DateTime<Utc>,
-) -> HashMap<&'a str, f64> {
+) -> HashMap<&'a str, TickerSummary> {
     let granularity = Granularity::Day;
-    let mut result = HashMap::<&str, f64>::new();
+    let mut result = HashMap::<&str, TickerSummary>::new();
     for ticker in tickers {
-        let quotes = match get_prices(provider, ticker, from_date, &granularity) {
+        match provider.get_quote_history_interval(
+            ticker,
+            from_date.clone(),
+            Utc::now(),
+            granularity.to_string(),
+        ) {
+            Ok(response) => match response.quotes() {
+                Ok(quotes) => {
+                    let mut ticker_data = TickerSummary::new(ticker);
+                    ticker_data.update_ticker_summary(quotes);
+                    result.insert(ticker, ticker_data);
+                },
+                Err(_) => todo!(),
+            },
+            Err(error) => {
+                warn!(
+                    "Cannot retrieve response for ticker {}! {:?}",
+                    ticker, error
+                );
+                continue;
+            }
+        };
+        /* let quotes = match get_prices(provider, ticker, from_date, &granularity) {
             Ok(value) => value,
             Err(_) => {
                 warn!("Failed to retrieve quotes for ticker {}", ticker);
@@ -60,7 +82,7 @@ pub fn get_max_prices<'a>(
             }
         };
         let max_price = max(quotes.as_slice()).unwrap();
-        result.insert(ticker, max_price);
+        result.insert(ticker, max_price); */
     }
     result
 }
@@ -69,11 +91,33 @@ pub fn get_min_prices<'a>(
     tickers: &'a mut clap::Values,
     provider: &'a yahoo::YahooConnector,
     from_date: &'a DateTime<Utc>,
-) -> HashMap<&'a str, f64> {
+) -> HashMap<&'a str, TickerSummary> {
     let granularity = Granularity::Day;
-    let mut result = HashMap::<&str, f64>::new();
+    let mut result = HashMap::<&str, TickerSummary>::new();
     for ticker in tickers {
-        let quotes = match get_prices(provider, ticker, from_date, &granularity) {
+        match provider.get_quote_history_interval(
+            ticker,
+            from_date.clone(),
+            Utc::now(),
+            granularity.to_string(),
+        ) {
+            Ok(response) => match response.quotes() {
+                Ok(quotes) => {
+                    let mut ticker_data = TickerSummary::new(ticker);
+                    ticker_data.update_ticker_summary(quotes);
+                    result.insert(ticker, ticker_data);
+                },
+                Err(_) => todo!(),
+            },
+            Err(error) => {
+                warn!(
+                    "Cannot retrieve response for ticker {}! {:?}",
+                    ticker, error
+                );
+                continue;
+            }
+        };
+        /* let quotes = match get_prices(provider, ticker, from_date, &granularity) {
             Ok(value) => value,
             Err(_) => {
                 warn!("Failed to retrieve quotes for ticker {}", ticker);
@@ -81,7 +125,7 @@ pub fn get_min_prices<'a>(
             }
         };
         let min_price = min(quotes.as_slice()).unwrap();
-        result.insert(ticker, min_price);
+        result.insert(ticker, min_price); */
     }
     result
 }
@@ -115,11 +159,33 @@ pub fn get_price_differences<'a>(
     tickers: &'a mut clap::Values,
     provider: &yahoo::YahooConnector,
     from_date: &DateTime<Utc>,
-) -> HashMap<&'a str, (f64, f64)> {
+) -> HashMap<&'a str, TickerSummary> {
     let granularity = Granularity::Day;
     let mut result = HashMap::new();
     for ticker in tickers {
-        let quotes = match get_prices(provider, ticker, from_date, &granularity) {
+        match provider.get_quote_history_interval(
+            ticker,
+            from_date.clone(),
+            Utc::now(),
+            granularity.to_string(),
+        ) {
+            Ok(response) => match response.quotes() {
+                Ok(quotes) => {
+                    let mut ticker_data = TickerSummary::new(ticker);
+                    ticker_data.update_ticker_summary(quotes);
+                    result.insert(ticker, ticker_data);
+                },
+                Err(_) => todo!(),
+            },
+            Err(error) => {
+                warn!(
+                    "Cannot retrieve response for ticker {}! {:?}",
+                    ticker, error
+                );
+                continue;
+            }
+        };
+/*         let quotes = match get_prices(provider, ticker, from_date, &granularity) {
             Ok(value) => value,
             Err(_) => {
                 warn!("Failed to retrieve quotes for ticker {}", ticker);
@@ -131,7 +197,7 @@ pub fn get_price_differences<'a>(
         } else {
             warn!("Could not calculate difference for {}. Skipping!", ticker);
         }
-    }
+ */    }
     result
 }
 
@@ -165,21 +231,6 @@ pub fn get_ticker_summary<'a>(
                 continue;
             }
         };
-
-/*        let last_quote = response.last_quote().unwrap();
-        let prices = get_prices_from_response(response).unwrap();
-        let mut ticker_data = TickerSummary::new(ticker, *from_date);
-        ticker_data.update_ticker_summary(response.quotes());
-         ticker_data.price = last_quote.adjclose;
-        ticker_data.last_date = DateTime::from(UNIX_EPOCH + Duration::from_secs(last_quote.timestamp));
-        ticker_data.max = max(&prices).unwrap();
-        ticker_data.min = min(&prices).unwrap();
-        ticker_data.avg = avg(&&prices).unwrap();
-        let (perc, diff) = price_difference(&prices).unwrap();
-        ticker_data.perc = perc - 100.0;
-        ticker_data.diff = diff;        
-        result.insert(ticker, ticker_data);
-*/
     }
     result
 }
