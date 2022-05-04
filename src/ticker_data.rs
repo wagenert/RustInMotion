@@ -2,14 +2,14 @@ mod data_processing;
 mod granularity;
 mod ticker_summary;
 
-use std::time::UNIX_EPOCH;
+
 
 use crate::prelude::*;
 use data_processing::*;
 use granularity::*;
-use std::time::Duration;
+
 use ticker_summary::*;
-use yahoo::{Quote, YResponse, YahooConnector, YahooError};
+use yahoo::{Quote, YahooConnector, YahooError};
 
 fn get_quotes(
     provider: &YahooConnector,
@@ -25,13 +25,6 @@ fn get_quotes(
     ) {
         Ok(response) => response.quotes(),
         Err(error) => Err(error),
-    }
-}
-
-fn get_prices_from_response(response: YResponse) -> Result<Vec<f64>, YahooError> {
-    match response.quotes() {
-        Ok(quotes) => Ok(quotes.iter().map(|quote| quote.adjclose).collect()),
-        Err(yerr) => Err(yerr),
     }
 }
 
@@ -138,17 +131,27 @@ pub fn get_ticker_summary<'a>(
     tickers: &'a mut clap::Values,
     provider: &YahooConnector,
     from_date: &DateTime<Utc>,
-) -> HashMap<&'a str, TickerData> {
+) -> HashMap<&'a str, TickerSummary> {
     let mut result = HashMap::new();
     let granularity = Granularity::Day;
     for ticker in tickers {
-        let response = match provider.get_quote_history_interval(
+        let mut ticker_summary = TickerSummary::new(ticker);
+        match provider.get_quote_history_interval(
             ticker,
             from_date.clone(),
             Utc::now(),
             granularity.to_string(),
         ) {
-            Ok(response) => response,
+            Ok(response) => match response.quotes() {
+                Ok(quotes) => {
+                    ticker_summary.update_ticker_summary(quotes);
+                    result.insert(ticker, ticker_summary);
+                },
+                Err(error) => {
+                    eprintln!("Can not retrieve quotes for ticker {}. Reason {:?}", ticker, error);
+                    continue;
+                },
+            },
             Err(error) => {
                 eprintln!(
                     "Cannot retrieve response for ticker {}! {:?}",
@@ -157,19 +160,6 @@ pub fn get_ticker_summary<'a>(
                 continue;
             }
         };
-
-        let last_quote = response.last_quote().unwrap();
-        let prices = get_prices_from_response(response).unwrap();
-        let mut ticker_data = TickerData::new(ticker);
-        ticker_data.price = last_quote.adjclose;
-        ticker_data.date = DateTime::from(UNIX_EPOCH + Duration::from_secs(last_quote.timestamp));
-        ticker_data.max = max(&prices).unwrap();
-        ticker_data.min = min(&prices).unwrap();
-        ticker_data.avg = avg(&&prices).unwrap();
-        let (perc, diff) = price_difference(&prices).unwrap();
-        ticker_data.perc = perc - 100.0;
-        ticker_data.diff = diff;
-        result.insert(ticker, ticker_data);
     }
     result
 }
