@@ -46,14 +46,6 @@ pub fn price_difference(series: &[f64]) -> Option<(f64, f64)> {
     None
 }
 
-pub fn avg(series: &[f64]) -> Option<f64> {
-    if series.len() > 0 {
-        let sum: f64 = series.iter().sum();
-        return Some(sum / (series.len() as f64));
-    }
-    None
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -112,6 +104,12 @@ mod test {
     }
 
     #[test]
+    fn test_sma_none_too_large_window() {
+        let s: [f64; 4] = [1.0, 2.0, 3.0, 4.0];
+        assert_eq!(n_window_sma(5, &s), None);
+    }
+
+    #[test]
     fn test_price_difference_none() {
         let s: [f64; 0] = [];
         assert_eq!(price_difference(&s), None);
@@ -134,23 +132,5 @@ mod test {
     fn test_price_difference_zero() {
         let s: [f64; 3] = [0.0, 3.0, 2.0];
         assert_eq!(price_difference(&s), None);
-    }
-
-    #[test]
-    fn test_avg_none() {
-        let s: [f64; 0] = [];
-        assert_eq!(avg(&s), None);
-    }
-
-    #[test]
-    fn test_avg_trivial() {
-        let s: [f64; 1] = [1.0];
-        assert_eq!(avg(&s), Some(1.0));
-    }
-
-    #[test]
-    fn test_avg_some() {
-        let s: [f64; 2] = [2.0, 4.0];
-        assert_eq!(avg(&s), Some(3.0));
     }
 }
