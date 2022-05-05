@@ -87,20 +87,24 @@ pub fn get_sma_windows<'a>(
     provider: &'a yahoo::YahooConnector,
     from_date: &DateTime<Utc>,
     window: usize,
-) -> HashMap<&'a str, Vec<f64>> {
+) -> Result<HashMap<&'a str, Vec<f64>>, String> {
     let granularity = Granularity::Day;
     let mut result = HashMap::new();
     for ticker in tickers {
         let quotes = match get_prices(provider, ticker, from_date, &granularity) {
             Ok(value) => value,
             Err(_) => {
-                eprintln!("Failed to retrieve quotes for ticker {}", ticker);
+                warn!("Failed to retrieve quotes for ticker {}", ticker);
                 continue;
             }
         };
-        result.insert(ticker, n_window_sma(window, quotes.as_slice()).unwrap());
+        if let Some(sla) = n_window_sma(window, quotes.as_slice()) {
+            result.insert(ticker, sla);
+        } else {
+            return Err("Sliding window did return None as a result.".to_string());
+        }
     }
-    result
+    Ok(result)
 }
 
 pub fn get_price_differences<'a>(
@@ -135,7 +139,6 @@ pub fn get_ticker_summary<'a>(
     let mut result = HashMap::new();
     let granularity = Granularity::Day;
     for ticker in tickers {
-        let mut ticker_summary = TickerSummary::new(ticker);
         match provider.get_quote_history_interval(
             ticker,
             from_date.clone(),
@@ -144,16 +147,14 @@ pub fn get_ticker_summary<'a>(
         ) {
             Ok(response) => match response.quotes() {
                 Ok(quotes) => {
-                    ticker_summary.update_ticker_summary(quotes);
-                    result.insert(ticker, ticker_summary);
+                    let mut ticker_data = TickerSummary::new(ticker);
+                    ticker_data.update_ticker_summary(quotes);
+                    result.insert(ticker, ticker_data);
                 },
-                Err(error) => {
-                    eprintln!("Can not retrieve quotes for ticker {}. Reason {:?}", ticker, error);
-                    continue;
-                },
+                Err(_) => todo!(),
             },
             Err(error) => {
-                eprintln!(
+                warn!(
                     "Cannot retrieve response for ticker {}! {:?}",
                     ticker, error
                 );
