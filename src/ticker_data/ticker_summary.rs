@@ -122,3 +122,15 @@ impl Display for TickerSummary {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::TickerSummary;
+
+    #[test]
+    fn avg_none() {
+        let ticker_summary = TickerSummary::new("ABCDE");
+        assert_eq!(ticker_summary.count, 0);
+        assert_eq!(ticker_summary.avg(), None);
+    }
+}
