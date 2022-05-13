@@ -3,7 +3,7 @@ mod granularity;
 mod ticker_summary;
 
 use crate::prelude::*;
-use clap::Values;
+
 use data_processing::*;
 use granularity::*;
 
@@ -46,7 +46,7 @@ async fn get_prices(
 }
 
 pub async fn get_max_prices(
-    tickers: &mut Values<'static>,
+    tickers: &mut Vec<&'static str>,
     provider: &'static yahoo::YahooConnector,
     from_date: &'static DateTime<Utc>,
 ) -> HashMap<&'static str, f64> {
@@ -67,7 +67,7 @@ pub async fn get_max_prices(
 }
 
 pub async fn get_min_prices(
-    tickers: &mut Values<'static>,
+    tickers: &mut Vec<&'static str>,
     provider: &'static yahoo::YahooConnector,
     from_date: &'static DateTime<Utc>,
 ) -> HashMap<&'static str, f64> {
@@ -88,7 +88,7 @@ pub async fn get_min_prices(
 }
 
 pub async fn get_sma_windows(
-    tickers: &mut Values<'static>,
+    tickers: &Vec<&'static str>,
     provider: &'static yahoo::YahooConnector,
     from_date: &'static DateTime<Utc>,
     window: usize,
@@ -104,7 +104,7 @@ pub async fn get_sma_windows(
             }
         };
         if let Some(sla) = n_window_sma(window, quotes.as_slice()) {
-            result.insert(ticker, sla);
+            result.insert(*ticker, sla);
         } else {
             return Err("Sliding window did return None as a result.".to_string());
         }
@@ -113,7 +113,7 @@ pub async fn get_sma_windows(
 }
 
 pub async fn get_price_differences(
-    tickers: &mut Values<'static>,
+    tickers: &Vec<&'static str>,
     provider: &'static yahoo::YahooConnector,
     from_date: &'static DateTime<Utc>,
 ) -> HashMap<&'static str, (f64, f64)> {
@@ -128,7 +128,7 @@ pub async fn get_price_differences(
             }
         };
         if let Some(difference) = price_difference(quotes.as_slice()) {
-            result.insert(ticker, difference);
+            result.insert(*ticker, difference);
         } else {
             eprintln!("Could not calculate difference for {}. Skipping!", ticker);
         }
@@ -137,7 +137,7 @@ pub async fn get_price_differences(
 }
 
 pub async fn get_ticker_summary(
-    tickers: &mut Values<'static>,
+    tickers: &Vec<&'static str>,
     provider: &'static YahooConnector,
     from_date: &DateTime<Utc>,
 ) -> HashMap<&'static str, TickerSummary> {
@@ -154,7 +154,7 @@ pub async fn get_ticker_summary(
                 Ok(quotes) => {
                     let mut ticker_data = TickerSummary::new(ticker);
                     ticker_data.update_ticker_summary(quotes);
-                    result.insert(ticker, ticker_data);
+                    result.insert(*ticker, ticker_data);
                 }
                 Err(_) => todo!(),
             },
