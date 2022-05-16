@@ -11,19 +11,19 @@ use ticker_summary::*;
 use yahoo::{Quote, YahooConnector, YahooError};
 
 async fn get_quotes(
-    provider: &'static YahooConnector,
-    ticker: &'static str,
-    from_date: &DateTime<Utc>,
+    ticker: String,
+    from_date: DateTime<Utc>,
     granularity: &'static Granularity,
 ) -> Result<Vec<Quote>, YahooError> {
-    match tokio::spawn(provider.get_quote_history_interval(
-        ticker,
-        from_date.clone(),
-        Utc::now(),
-        granularity.to_string(),
-    ))
-    .await
-    .unwrap()
+    let provider = yahoo::YahooConnector::new();
+    match provider
+        .get_quote_history_interval(
+            &ticker,
+            from_date.clone(),
+            Utc::now(),
+            granularity.to_string(),
+        )
+        .await
     {
         Ok(response) => response.quotes(),
         Err(error) => Err(error),
@@ -31,12 +31,11 @@ async fn get_quotes(
 }
 
 async fn get_prices(
-    provider: &'static YahooConnector,
-    ticker: &'static str,
-    from_date: &'static DateTime<Utc>,
+    ticker: String,
+    from_date: DateTime<Utc>,
     granularity: &'static Granularity,
 ) -> Result<Vec<f64>, YahooError> {
-    match tokio::spawn(get_quotes(provider, ticker, from_date, granularity))
+    match tokio::spawn(get_quotes(ticker, from_date, granularity))
         .await
         .unwrap()
     {
@@ -46,14 +45,14 @@ async fn get_prices(
 }
 
 pub async fn get_max_prices(
-    tickers: &mut Vec<&'static str>,
-    provider: &'static yahoo::YahooConnector,
-    from_date: &'static DateTime<Utc>,
-) -> HashMap<&'static str, f64> {
-    static granularity: Granularity = Granularity::Day;
-    let mut result = HashMap::<&str, f64>::new();
+    tickers: Vec<String>,
+    from_date: DateTime<Utc>,
+) -> HashMap<String, f64> {
+    let mut result = HashMap::<String, f64>::new();
     for ticker in tickers {
-        let quotes = match tokio::spawn(get_prices(provider, ticker, from_date, &granularity)).await.unwrap() {
+        let quotes = match get_prices(ticker.clone(), from_date, &Granularity::Day)
+            .await
+        {
             Ok(value) => value,
             Err(_) => {
                 eprintln!("Failed to retrieve quotes for ticker {}", ticker);
@@ -67,14 +66,15 @@ pub async fn get_max_prices(
 }
 
 pub async fn get_min_prices(
-    tickers: &mut Vec<&'static str>,
-    provider: &'static yahoo::YahooConnector,
-    from_date: &'static DateTime<Utc>,
-) -> HashMap<&'static str, f64> {
-    static granularity: Granularity = Granularity::Day;
-    let mut result = HashMap::<&str, f64>::new();
+    tickers: Vec<String>,
+    from_date: DateTime<Utc>,
+) -> HashMap<String, f64> {
+    let mut result = HashMap::<String, f64>::new();
     for ticker in tickers {
-        let quotes = match tokio::spawn(get_prices(provider, ticker, from_date, &granularity)).await.unwrap() {
+        let quotes = match tokio::spawn(get_prices(ticker.clone(), from_date, &Granularity::Day))
+            .await
+            .unwrap()
+        {
             Ok(value) => value,
             Err(_) => {
                 eprintln!("Failed to retrieve quotes for ticker {}", ticker);
@@ -88,15 +88,16 @@ pub async fn get_min_prices(
 }
 
 pub async fn get_sma_windows(
-    tickers: &Vec<&'static str>,
-    provider: &'static yahoo::YahooConnector,
-    from_date: &'static DateTime<Utc>,
+    tickers: Vec<String>,
+    from_date: DateTime<Utc>,
     window: usize,
-) -> Result<HashMap<&'static str, Vec<f64>>, String> {
-    static granularity: Granularity = Granularity::Day;
+) -> Result<HashMap<String, Vec<f64>>, String> {
     let mut result = HashMap::new();
     for ticker in tickers {
-        let quotes = match tokio::spawn(get_prices(provider, ticker, from_date, &granularity)).await.unwrap() {
+        let quotes = match tokio::spawn(get_prices(ticker.clone(), from_date, &Granularity::Day))
+            .await
+            .unwrap()
+        {
             Ok(value) => value,
             Err(_) => {
                 warn!("Failed to retrieve quotes for ticker {}", ticker);
@@ -104,7 +105,7 @@ pub async fn get_sma_windows(
             }
         };
         if let Some(sla) = n_window_sma(window, quotes.as_slice()) {
-            result.insert(*ticker, sla);
+            result.insert(ticker, sla);
         } else {
             return Err("Sliding window did return None as a result.".to_string());
         }
@@ -113,14 +114,14 @@ pub async fn get_sma_windows(
 }
 
 pub async fn get_price_differences(
-    tickers: &Vec<&'static str>,
-    provider: &'static yahoo::YahooConnector,
-    from_date: &'static DateTime<Utc>,
-) -> HashMap<&'static str, (f64, f64)> {
-    static granularity: Granularity = Granularity::Day;
+    tickers: Vec<String>,
+    from_date: DateTime<Utc>,
+) -> HashMap<String, (f64, f64)> {
     let mut result = HashMap::new();
     for ticker in tickers {
-        let quotes = match tokio::spawn(get_prices(provider, ticker, from_date, &granularity)).await.unwrap() {
+        let quotes = match get_prices(ticker.clone(), from_date, &Granularity::Day)
+            .await
+        {
             Ok(value) => value,
             Err(_) => {
                 eprintln!("Failed to retrieve quotes for ticker {}", ticker);
@@ -128,7 +129,7 @@ pub async fn get_price_differences(
             }
         };
         if let Some(difference) = price_difference(quotes.as_slice()) {
-            result.insert(*ticker, difference);
+            result.insert(ticker, difference);
         } else {
             eprintln!("Could not calculate difference for {}. Skipping!", ticker);
         }
@@ -137,24 +138,26 @@ pub async fn get_price_differences(
 }
 
 pub async fn get_ticker_summary(
-    tickers: &Vec<&'static str>,
-    provider: &'static YahooConnector,
-    from_date: &DateTime<Utc>,
-) -> HashMap<&'static str, TickerSummary> {
+    tickers: Vec<String>,
+    from_date: DateTime<Utc>,
+) -> HashMap<String, TickerSummary> {
     let mut result = HashMap::new();
-    static granularity: Granularity = Granularity::Day;
+    let granularity: Granularity = Granularity::Day;
+    let provider = YahooConnector::new();
     for ticker in tickers {
-        match tokio::spawn(provider.get_quote_history_interval(
-            ticker,
-            from_date.clone(),
-            Utc::now(),
-            granularity.to_string(),
-        )).await.unwrap() {
+        match provider.get_quote_history_interval(
+                &ticker,
+                from_date.clone(),
+                Utc::now(),
+                granularity.to_string(),
+            )
+            .await
+        {
             Ok(response) => match response.quotes() {
                 Ok(quotes) => {
-                    let mut ticker_data = TickerSummary::new(ticker);
+                    let mut ticker_data = TickerSummary::new(&ticker);
                     ticker_data.update_ticker_summary(quotes);
-                    result.insert(*ticker, ticker_data);
+                    result.insert(ticker, ticker_data);
                 }
                 Err(_) => todo!(),
             },

@@ -67,7 +67,8 @@ fn parse_window_param<'a>(
     return result;
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     env_logger::init();
 
     let matches = command!()
@@ -109,8 +110,11 @@ fn main() {
         .get_matches();
 
     // Tickers is a required parameter. Therefore it is safe to use unwrap
-    let mut tickers = matches.values_of("ticker").unwrap();
-
+    let tickers = matches.values_of("ticker")
+        .unwrap()
+        .map(|v| v.to_string())
+        .collect::<Vec<String>>();
+    
     let from_date = match matches.value_of("from") {
         Some(date) => match extract_date(date) {
             Ok(from_date) => from_date,
@@ -122,17 +126,18 @@ fn main() {
         None => Utc::now() - Duration::days(30),
     };
 
-    let provider = yahoo::YahooConnector::new();
     match matches.subcommand() {
         Some(("max", _)) => {
-            let max_prices = get_max_prices(&mut tickers, &provider, &from_date);
+            let max_prices = get_max_prices(tickers, from_date)
+            .await;
             println!("Max prices:");
             max_prices.iter().for_each(|(key, value)| {
                 println!("{}: {}", *key, value);
             });
         }
         Some(("min", _)) => {
-            let min_prices = get_min_prices(&mut tickers, &provider, &from_date);
+            let min_prices = get_min_prices(tickers, from_date)
+                .await;
             println!("Min prices:");
             min_prices.iter().for_each(|(key, value)| {
                 println!("{}: {}", *key, value);
@@ -150,7 +155,7 @@ fn main() {
                 }
             };
             println!("Sliding windows of {} days", window);
-            match get_sma_windows(&mut tickers, &provider, &from_date, window) {
+            match get_sma_windows(tickers, from_date, window).await {
                 Ok(smas) => smas.iter().for_each(|(key, values)| {
                     println!("{}: {:#?}", *key, values);
                 }),
@@ -161,14 +166,15 @@ fn main() {
             };
         }
         Some(("diff", _)) => {
-            let price_differences = get_price_differences(&mut tickers, &provider, &from_date);
+            let price_differences = get_price_differences(tickers,  from_date)
+                    .await;
             println!("Ticker\tPercent\tDifference");
             price_differences.iter().for_each(|(key, (perc, diff))| {
                 println!("{}:\t{:.2}%\t{:.2}", *key, perc, diff);
             });
         }
         Some(("sum", _)) => {
-            let ticker_summary = get_ticker_summary(&mut tickers, &provider, &from_date);
+            let ticker_summary = get_ticker_summary(tickers, from_date).await;
             println!("period start,symbol,price,change %,min,max,30d avg");
             ticker_summary
                 .iter()
