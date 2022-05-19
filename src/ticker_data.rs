@@ -35,7 +35,7 @@ async fn get_prices(
     from_date: DateTime<Utc>,
     granularity: &'static Granularity,
 ) -> Result<Vec<f64>, YahooError> {
-    match tokio::spawn(get_quotes(ticker, from_date, granularity))
+    match actix_rt::spawn(get_quotes(ticker, from_date, granularity))
         .await
         .unwrap()
     {
@@ -71,7 +71,7 @@ pub async fn get_min_prices(
 ) -> HashMap<String, f64> {
     let mut result = HashMap::<String, f64>::new();
     for ticker in tickers {
-        let quotes = match tokio::spawn(get_prices(ticker.clone(), from_date, &Granularity::Day))
+        let quotes = match actix_rt::spawn(get_prices(ticker.clone(), from_date, &Granularity::Day))
             .await
             .unwrap()
         {
@@ -94,7 +94,7 @@ pub async fn get_sma_windows(
 ) -> Result<HashMap<String, Vec<f64>>, String> {
     let mut result = HashMap::new();
     for ticker in tickers {
-        let quotes = match tokio::spawn(get_prices(ticker.clone(), from_date, &Granularity::Day))
+        let quotes = match actix_rt::spawn(get_prices(ticker.clone(), from_date, &Granularity::Day))
             .await
             .unwrap()
         {

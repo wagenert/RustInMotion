@@ -67,8 +67,11 @@ fn parse_window_param<'a>(
     return result;
 }
 
-#[tokio::main]
+#[actix_rt::main]
 async fn main() {
+    //let system = actix::System::new();
+    //system.run();
+
     env_logger::init();
 
     let matches = command!()
