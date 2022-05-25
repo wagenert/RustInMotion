@@ -1,14 +1,13 @@
 mod data_processing;
-mod granularity;
 mod ticker_summary;
 
 use crate::prelude::*;
 
 use data_processing::*;
-use granularity::*;
 
 use ticker_summary::*;
 use yahoo::{Quote, YahooConnector, YahooError};
+use crate::yahoo_finance_service::granularity::Granularity;
 
 async fn get_quotes(
     ticker: String,

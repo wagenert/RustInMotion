@@ -1,4 +1,5 @@
 mod ticker_data;
+mod yahoo_finance_service;
 
 mod prelude {
     pub use crate::ticker_data::*;
@@ -8,7 +9,9 @@ mod prelude {
     pub use yahoo_finance_api as yahoo;
 }
 
+use actix::prelude::*;
 use clap::{arg, command, Command};
+use yahoo_finance_service::yahoo_finance_service_actor::YahooFinanceServiceActor;
 use prelude::*;
 
 fn is_valid_date(d: &str) -> Result<(), String> {
@@ -71,6 +74,8 @@ fn parse_window_param<'a>(
 async fn main() {
     //let system = actix::System::new();
     //system.run();
+
+    let addr = YahooFinanceServiceActor.start();
 
     env_logger::init();
 
